@@ -6,17 +6,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://dump-dot-lol.vercel.app'
 
 export async function POST(req: NextRequest) {
-  const { duration, reason, tone, ref, ventMode } = await req.json()
+  const { duration, reason, tone, ref } = await req.json()
 
-  if (!reason || !tone) {
+  if (!duration || !reason || !tone) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
   }
 
   const metadata: Record<string, string> = {
-    duration: duration || 'unknown',
-    reason: reason.slice(0, 800),
+    duration,
+    reason: reason.slice(0, 500),
     tone,
-    ventMode: ventMode ? 'true' : 'false',
   }
   if (ref) metadata.affiliate_code = String(ref).slice(0, 50)
 

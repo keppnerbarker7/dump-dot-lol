@@ -27,14 +27,13 @@ export async function GET(req: NextRequest) {
   const sessionId = req.nextUrl.searchParams.get('session_id')
   const testingMode = process.env.NEXT_PUBLIC_TESTING_MODE === 'true'
 
-  let duration: string, reason: string, tone: string, ventMode: string | undefined
+  let duration: string, reason: string, tone: string
 
   if (testingMode && !sessionId) {
     // Read directly from URL params — no Stripe session needed
     duration = req.nextUrl.searchParams.get('duration') || 'unknown'
     reason = req.nextUrl.searchParams.get('reason') || ''
     tone = req.nextUrl.searchParams.get('tone') || 'direct'
-    ventMode = req.nextUrl.searchParams.get('ventMode') || 'false'
     if (!reason) return NextResponse.json({ error: 'Missing reason' }, { status: 400 })
   } else {
     if (!sessionId) return NextResponse.json({ error: 'No session_id' }, { status: 400 })
@@ -42,20 +41,15 @@ export async function GET(req: NextRequest) {
     if (session.payment_status !== 'paid') {
       return NextResponse.json({ error: 'Payment not complete' }, { status: 402 })
     }
-    ;({ duration, reason, tone, ventMode } = session.metadata as {
+    ;({ duration, reason, tone } = session.metadata as {
       duration: string
       reason: string
       tone: string
-      ventMode?: string
     })
   }
 
   const toneGuide = TONE_GUIDANCE[tone] || TONE_GUIDANCE.direct
-  const isVentMode = ventMode === 'true'
-
-  const userContent = isVentMode
-    ? `Here's the situation: ${reason}\nTone: ${tone}`
-    : `Relationship length: ${duration.replace(/-/g, ' ')}\nReason for ending it: ${reason}\nTone: ${tone}`
+  const userContent = `Relationship length: ${duration.replace(/-/g, ' ')}\nReason for ending it: ${reason}\nTone: ${tone}`
 
   const message = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',

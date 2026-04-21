@@ -42,8 +42,23 @@ function SuccessContent() {
 
   // Fetch text on load
   useEffect(() => {
-    if (!sessionId) { setStage('error'); setErrorMsg('No session found.'); return }
-    fetch(`/api/generate?session_id=${sessionId}`)
+    const searchParams = new URLSearchParams(window.location.search)
+    const sid = searchParams.get('session_id')
+    const reason = searchParams.get('reason')
+
+    let fetchUrl: string
+    if (sid) {
+      fetchUrl = `/api/generate?session_id=${sid}`
+    } else if (reason) {
+      // Testing mode — params passed directly
+      fetchUrl = `/api/generate?${searchParams.toString()}`
+    } else {
+      setStage('error')
+      setErrorMsg('No session found.')
+      return
+    }
+
+    fetch(fetchUrl)
       .then(r => r.json())
       .then(data => {
         if (data.error) { setErrorMsg(data.error); setStage('error'); return }
@@ -52,7 +67,7 @@ function SuccessContent() {
         setStage('camera-prompt')
       })
       .catch(() => { setErrorMsg('Something went wrong. Refresh the page.'); setStage('error') })
-  }, [sessionId])
+  }, [])
 
   function skipCamera() {
     setStage('revealed')

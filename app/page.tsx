@@ -19,6 +19,8 @@ export default function Home() {
   const [duration, setDuration] = useState('')
   const [reason, setReason] = useState('')
   const [tone, setTone] = useState('')
+  const [ventMode, setVentMode] = useState(false)
+  const [vent, setVent] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [ref, setRef] = useState('')
@@ -37,18 +39,29 @@ export default function Home() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!duration || !reason.trim() || !tone) {
-      setError('Fill in all three fields.')
-      return
+    if (ventMode) {
+      if (!vent.trim() || !tone) {
+        setError('Tell us what happened and pick a tone.')
+        return
+      }
+    } else {
+      if (!duration || !reason.trim() || !tone) {
+        setError('Fill in all three fields.')
+        return
+      }
     }
     setError('')
     setLoading(true)
+
+    const payload = ventMode
+      ? { duration: 'unknown', reason: vent.trim(), tone, ref, ventMode: true }
+      : { duration, reason: reason.trim(), tone, ref, ventMode: false }
 
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ duration, reason: reason.trim(), tone, ref }),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (data.url) {
@@ -86,46 +99,85 @@ export default function Home() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-6">
 
-          {/* Q1 */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#ccc]">
-              How long were you together?
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {DURATIONS.map(d => (
-                <button
-                  key={d.value}
-                  type="button"
-                  onClick={() => setDuration(d.value)}
-                  className={`px-3 py-2 rounded-lg text-sm border transition-colors text-left ${
-                    duration === d.value
-                      ? 'bg-brand border-brand text-white'
-                      : 'border-[#333] text-[#aaa] hover:border-[#555]'
-                  }`}
-                >
-                  {d.label}
-                </button>
-              ))}
+          {/* Mode toggle */}
+          <div className="flex rounded-lg border border-[#2a2a2a] overflow-hidden text-sm">
+            <button
+              type="button"
+              onClick={() => setVentMode(false)}
+              className={`flex-1 py-2 transition-colors ${!ventMode ? 'bg-[#2a2a2a] text-[#f5f5f5]' : 'text-[#555] hover:text-[#888]'}`}
+            >
+              Quick (3 questions)
+            </button>
+            <button
+              type="button"
+              onClick={() => setVentMode(true)}
+              className={`flex-1 py-2 transition-colors ${ventMode ? 'bg-[#2a2a2a] text-[#f5f5f5]' : 'text-[#555] hover:text-[#888]'}`}
+            >
+              Just vent
+            </button>
+          </div>
+
+          {ventMode ? (
+            /* Vent mode — single free-text field */
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#ccc]" htmlFor="vent">
+                Tell us what happened
+              </label>
+              <textarea
+                id="vent"
+                value={vent}
+                onChange={e => setVent(e.target.value)}
+                placeholder="Just write it out. The more context the better. The AI will figure out the rest."
+                rows={5}
+                maxLength={800}
+                className="w-full bg-[#111] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#f5f5f5] placeholder-[#555] focus:outline-none focus:border-[#555] resize-none"
+              />
+              <p className="text-xs text-[#444] text-right">{vent.length}/800</p>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Q1 */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[#ccc]">
+                  How long were you together?
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {DURATIONS.map(d => (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() => setDuration(d.value)}
+                      className={`px-3 py-2 rounded-lg text-sm border transition-colors text-left ${
+                        duration === d.value
+                          ? 'bg-brand border-brand text-white'
+                          : 'border-[#333] text-[#aaa] hover:border-[#555]'
+                      }`}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {/* Q2 */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#ccc]" htmlFor="reason">
-              Main reason for ending it?
-            </label>
-            <textarea
-              id="reason"
-              value={reason}
-              onChange={e => setReason(e.target.value)}
-              placeholder="1–2 sentences. The AI uses this to make the text feel real."
-              rows={3}
-              maxLength={300}
-              className="w-full bg-[#111] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#f5f5f5] placeholder-[#555] focus:outline-none focus:border-[#555] resize-none"
-            />
-          </div>
+              {/* Q2 */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[#ccc]" htmlFor="reason">
+                  Main reason for ending it?
+                </label>
+                <textarea
+                  id="reason"
+                  value={reason}
+                  onChange={e => setReason(e.target.value)}
+                  placeholder="1–2 sentences. The AI uses this to make the text feel real."
+                  rows={3}
+                  maxLength={300}
+                  className="w-full bg-[#111] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#f5f5f5] placeholder-[#555] focus:outline-none focus:border-[#555] resize-none"
+                />
+              </div>
+            </>
+          )}
 
-          {/* Q3 */}
+          {/* Q3 (tone) — always shown */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-[#ccc]">Tone?</label>
             <div className="grid grid-cols-3 gap-2">
@@ -148,6 +200,7 @@ export default function Home() {
           </div>
 
           {error && <p className="text-red-400 text-sm">{error}</p>}
+
 
           <button
             type="submit"

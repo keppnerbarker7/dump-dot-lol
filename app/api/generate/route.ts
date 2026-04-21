@@ -25,21 +25,29 @@ Rules:
 
 export async function GET(req: NextRequest) {
   const sessionId = req.nextUrl.searchParams.get('session_id')
-  if (!sessionId) {
-    return NextResponse.json({ error: 'No session_id' }, { status: 400 })
-  }
+  const testingMode = process.env.NEXT_PUBLIC_TESTING_MODE === 'true'
 
-  const session = await stripe.checkout.sessions.retrieve(sessionId)
+  let duration: string, reason: string, tone: string, ventMode: string | undefined
 
-  if (session.payment_status !== 'paid') {
-    return NextResponse.json({ error: 'Payment not complete' }, { status: 402 })
-  }
-
-  const { duration, reason, tone, ventMode } = session.metadata as {
-    duration: string
-    reason: string
-    tone: string
-    ventMode?: string
+  if (testingMode && !sessionId) {
+    // Read directly from URL params — no Stripe session needed
+    duration = req.nextUrl.searchParams.get('duration') || 'unknown'
+    reason = req.nextUrl.searchParams.get('reason') || ''
+    tone = req.nextUrl.searchParams.get('tone') || 'direct'
+    ventMode = req.nextUrl.searchParams.get('ventMode') || 'false'
+    if (!reason) return NextResponse.json({ error: 'Missing reason' }, { status: 400 })
+  } else {
+    if (!sessionId) return NextResponse.json({ error: 'No session_id' }, { status: 400 })
+    const session = await stripe.checkout.sessions.retrieve(sessionId)
+    if (session.payment_status !== 'paid') {
+      return NextResponse.json({ error: 'Payment not complete' }, { status: 402 })
+    }
+    ;({ duration, reason, tone, ventMode } = session.metadata as {
+      duration: string
+      reason: string
+      tone: string
+      ventMode?: string
+    })
   }
 
   const toneGuide = TONE_GUIDANCE[tone] || TONE_GUIDANCE.direct

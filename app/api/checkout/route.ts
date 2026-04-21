@@ -20,6 +20,17 @@ export async function POST(req: NextRequest) {
   }
   if (ref) metadata.affiliate_code = String(ref).slice(0, 50)
 
+  // TESTING MODE — skip Stripe, go straight to generate
+  if (process.env.NEXT_PUBLIC_TESTING_MODE === 'true') {
+    const params = new URLSearchParams({
+      duration: metadata.duration,
+      reason: metadata.reason,
+      tone: metadata.tone,
+      ventMode: metadata.ventMode,
+    })
+    return NextResponse.json({ url: `${BASE_URL}/success?${params.toString()}` })
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     line_items: [{ price: process.env.STRIPE_PRICE_ID!, quantity: 1 }],

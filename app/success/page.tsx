@@ -42,14 +42,15 @@ function SuccessContent() {
 
   // Fetch text on load
   useEffect(() => {
-    const sid = params.get('session_id')
-    const reason = params.get('reason')
+    const search = new URLSearchParams(window.location.search)
+    const sid = search.get('session_id')
+    const reason = search.get('reason')
 
     let fetchUrl: string
     if (sid) {
       fetchUrl = `/api/generate?session_id=${sid}`
     } else if (reason) {
-      fetchUrl = `/api/generate?${params.toString()}`
+      fetchUrl = `/api/generate?${search.toString()}`
     } else {
       setStage('error')
       setErrorMsg('No session found.')

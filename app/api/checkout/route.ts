@@ -25,7 +25,6 @@ export async function POST(req: NextRequest) {
       duration: metadata.duration,
       reason: metadata.reason,
       tone: metadata.tone,
-      ventMode: metadata.ventMode,
     })
     return NextResponse.json({ url: `${BASE_URL}/success?${params.toString()}` })
   }

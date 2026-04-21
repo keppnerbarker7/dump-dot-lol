@@ -66,7 +66,7 @@ function SuccessContent() {
         setStage('camera-prompt')
       })
       .catch(() => { setErrorMsg('Something went wrong. Refresh the page.'); setStage('error') })
-  }, [params])
+  }, [])
 
   function skipCamera() {
     setStage('revealed')
